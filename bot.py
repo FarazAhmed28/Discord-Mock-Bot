@@ -14,29 +14,10 @@ from itertools import groupby
 
 pres_range = 0.05 # range of acceptable answers
 
-with open("pb2019/ans.txt") as f:
-    r = []
-    for k in f.readlines():
-        r.append(k.strip())
-    c = [list(group) for k, group in groupby(r, lambda x: x == "x") if not k]
-    major_ans = [float(x) for x in c[0]]
-    hm_ans = [float(x) for x in c[1]]
-    he_ans = [float(x) for x in c[2]]
-    hx_ans = [float(x) for x in c[3]]
-
-with open("pb2019/pts.txt") as f:
-    r = []
-    for k in f.readlines():
-        r.append(k.strip())
-    c = [list(group) for k, group in groupby(r, lambda x: x == "x") if not k]
-    major_points = [int(x) for x in c[0]]
-    hm_points = [int(x) for x in c[1]]
-    he_points = [int(x) for x in c[2]]
-    hx_points = [int(x) for x in c[3]]
-
 
 points_scored = {}
 out_channel = {}
+year = {}
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -46,19 +27,21 @@ bot = commands.Bot(command_prefix="?")
 
 @bot.event
 async def on_ready():
-    global points_scored, out_channel
+    global points_scored, out_channel, year
     print(f'{bot.user.name} has connected to Discord!')
     await bot.change_presence(activity=discord.Game(name="mock Physics Brawl"))
     for guild in bot.guilds:
         print(guild, guild.id)
+        year[guild.id] = -1
         points_scored[guild.id] = 0
         out_channel[guild.id] = -1
 
 
 @bot.event
 async def on_guild_join(guild):
-    global points_scored, out_channel
+    global points_scored, out_channel, year
     print(guild, guild.id)
+    year[guild.id] = -1
     points_scored[guild.id] = 0
     out_channel[guild.id] = -1
 
@@ -70,12 +53,43 @@ async def test(ctx):
 @bot.command(name="out", help="Set output channel")
 @commands.has_role('mock')
 async def out(ctx, num:int):
-    global out_channel, points_scored
+    global out_channel, points_scored, year
     out_channel[ctx.message.guild.id] = num
     points_scored[ctx.message.guild.id] = 0
+    year[ctx.message.guild.id] = -1
     outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
     await ctx.send(f"Output set to {out_channel[ctx.message.guild.id]}")
     await outChannel.send(f"Output set to {out_channel[ctx.message.guild.id]}")
+
+@bot.command(name="year", help="Set year")
+@commands.has_role('mock')
+async def out(ctx, num:int):
+    outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
+    global points_scored, year
+    year[ctx.message.guild.id] = num
+    points_scored[ctx.message.guild.id] = 0
+    await ctx.send(f"Year set to {year[ctx.message.guild.id]}")
+    await outChannel.send(f"Year set to {year[ctx.message.guild.id]}")
+
+with open("pb" + str(year) + "/ans.txt") as f:
+    r = []
+    for k in f.readlines():
+        r.append(k.strip())
+    c = [list(group) for k, group in groupby(r, lambda x: x == "x") if not k]
+    major_ans = [float(x) for x in c[0]]
+    hm_ans = [float(x) for x in c[1]]
+    he_ans = [float(x) for x in c[2]]
+    hx_ans = [float(x) for x in c[3]]
+
+with open("pb" + str(year) + "/pts.txt") as f:
+    r = []
+    for k in f.readlines():
+        r.append(k.strip())
+    c = [list(group) for k, group in groupby(r, lambda x: x == "x") if not k]
+    major_points = [int(x) for x in c[0]]
+    hm_points = [int(x) for x in c[1]]
+    he_points = [int(x) for x in c[2]]
+    hx_points = [int(x) for x in c[3]]
 
 
 @bot.command(name="add", help="Add bonous points")
@@ -100,6 +114,10 @@ async def major(ctx):
     if out_channel[ctx.message.guild.id] == -1:
         await ctx.send("Please set Output Channel")
         return False
+    
+    if year[ctx.message.guild.id] == -1:
+        await ctx.send("Please set year")
+        return False
 
     outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
 
@@ -122,7 +140,7 @@ async def major(ctx):
     i = 1
     while i<=len(major_ans):
 
-        qn = "pb2019/images/" + str(i) + ".PNG"
+        qn = "pb" + str(year) + "/images/" + str(i) + ".PNG"
         await ctx.send(file=discord.File(qn))
         await ctx.send(f"{ceil(major_value[i-1])} points")        
        
@@ -167,6 +185,10 @@ async def hm(ctx):
     if out_channel[ctx.message.guild.id] == -1:
         await ctx.send("Please set Output Channel")
         return False
+    
+    if year[ctx.message.guild.id] == -1:
+        await ctx.send("Please set year")
+        return False
 
     outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
 
@@ -188,7 +210,7 @@ async def hm(ctx):
 
     i = 1
     while i<=len(hm_ans):
-        qn = "pb2019/images/m" + str(i) + ".PNG"
+        qn = "pb" + str(year) + "/images/m" + str(i) + ".PNG"
         await ctx.send(file=discord.File(qn))
         await ctx.send(f"{ceil(hm_value[i-1])} points")        
        
@@ -232,6 +254,10 @@ async def he(ctx):
     if out_channel[ctx.message.guild.id] == -1:
         await ctx.send("Please set Output Channel")
         return False
+    
+    if year[ctx.message.guild.id] == -1:
+        await ctx.send("Please set year")
+        return False
 
     outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
 
@@ -253,7 +279,7 @@ async def he(ctx):
 
     i = 1
     while i<=len(he_ans):
-        qn = "pb2019/images/e" + str(i) + ".PNG"
+        qn = "pb" + str(year) + "/images/e" + str(i) + ".PNG"
         await ctx.send(file=discord.File(qn))
         await ctx.send(f"{ceil(he_value[i-1])} points")        
        
@@ -298,6 +324,10 @@ async def hx(ctx):
     if out_channel[ctx.message.guild.id] == -1:
         await ctx.send("Please set Output Channel")
         return False
+    
+    if year[ctx.message.guild.id] == -1:
+        await ctx.send("Please set year")
+        return False
 
     outChannel = bot.get_channel(out_channel[ctx.message.guild.id])
 
@@ -319,7 +349,7 @@ async def hx(ctx):
 
     i = 1
     while i<=len(hx_ans):
-        qn = "pb2019/images/x" + str(i) + ".PNG"
+        qn = "pb" + str(year) + "/images/x" + str(i) + ".PNG"
         await ctx.send(file=discord.File(qn))
         await ctx.send(f"{ceil(hx_value[i-1])} points")        
        
